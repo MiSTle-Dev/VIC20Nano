@@ -17,20 +17,23 @@ entity VIC20_TOP is
     user         : in std_logic; -- S1 button
     leds_n       : out std_logic_vector(5 downto 0);
     io           : in std_logic_vector(5 downto 0);
-    -- USB-C BL616 UART
+    -- onboard USB-C Tang BL616 UART
     uart_rx      : in std_logic;
---    uart_tx      : out std_logic;
+    uart_tx      : out std_logic;
+    -- monitor port
+    bl616_mon_tx : out std_logic;
+    bl616_mon_rx : in std_logic;
     -- external hw pin UART
     uart_ext_rx  : in std_logic;
     uart_ext_tx  : out std_logic;
     -- SPI interface Sipeed M0S Dock external BL616 uC
---m0s         : inout std_logic_vector(4 downto 0);
+    m0s          : inout std_logic_vector(4 downto 0);
     -- SPI connection to onboard BL616
     spi_sclk    : in std_logic;
     spi_csn     : in std_logic;
     spi_dir     : out std_logic;
     spi_dat     : in std_logic;
-    spi_irqn    : out std_logic;    --
+    spi_irqn    : out std_logic;
     tmds_clk_n   : out std_logic;
     tmds_clk_p   : out std_logic;
     tmds_d_n     : out std_logic_vector( 2 downto 0);
@@ -83,7 +86,6 @@ type states is (
   FSM_SWITCHED
 );
 
-signal uart_tx        : std_logic;
 signal statepll       : states := FSM_RESET;
 signal clk64          : std_logic;
 signal clk32          : std_logic;
@@ -206,6 +208,7 @@ signal spi_io_din     : std_logic;
 signal spi_io_ss      : std_logic;
 signal spi_io_clk     : std_logic;
 signal spi_io_dout    : std_logic;
+signal spi_ext        : std_logic;
 signal disk_g64       : std_logic;
 signal disk_g64_d     : std_logic;
 signal c1541_reset    : std_logic;
@@ -436,19 +439,35 @@ component rPLL
 end component;
 
 begin
--- onboard BL616
-spi_io_din  <= spi_dat;
-spi_io_ss   <= spi_csn;
-spi_io_clk  <= spi_sclk;
-spi_dir     <= spi_io_dout;
-spi_irqn    <= int_out_n;
+  -- BL616 console to hw pins for external USB-UART adapter
+  uart_tx <= bl616_mon_rx;
+  bl616_mon_tx <= uart_rx;
 
--- external M0S Dock BL616 / PiPico  / ESP32
---spi_io_din  <= m0s(1);
---spi_io_ss   <= m0s(2);
---spi_io_clk  <= m0s(3);
---m0s(0)      <= spi_io_dout;
---m0s(4)      <= int_out_n;
+-- by default the internal SPI is being used. Once there is
+-- a select from the external spi (M0S Dock) , then the connection is being switched
+process (clk32, pll_locked)
+begin
+  if pll_locked = '0' then
+    spi_ext <= '0';
+  elsif rising_edge(clk32) then
+    spi_ext <= spi_ext;
+    if m0s(2) = '0' then
+        spi_ext <= '1';
+    end if;
+  end if;
+end process;
+
+  -- map output data onto both spi outputs
+  spi_io_din  <= m0s(1) when spi_ext = '1' else spi_dat;
+  spi_io_ss   <= m0s(2) when spi_ext = '1' else spi_csn;
+  spi_io_clk  <= m0s(3) when spi_ext = '1' else spi_sclk;
+
+  -- onboard BL616
+  spi_dir     <= spi_io_dout;
+  spi_irqn    <= int_out_n;
+  -- external M0S Dock BL616 / PiPico  / ESP32
+  m0s(0)      <= spi_io_dout;
+  m0s(4)      <= int_out_n;
 
 -- https://store.curiousinventor.com/guides/PS2/
 -- https://hackaday.io/project/170365-blueretro/log/186471-playstation-playstation-2-spi-interface
@@ -1520,7 +1539,7 @@ begin
   --user_port_cb1_in <= user_port_cb1_out;
   user_port_cb2_in <= user_port_cb2_out;
 
-  uart_tx <= user_port_cb2_out;
+  -- uart_tx <= user_port_cb2_out;  -- blocked 
   user_port_cb1_in <= uart_rx_filtered;
   user_port_in(0) <= uart_rx_filtered;
   -- Zeromodem
