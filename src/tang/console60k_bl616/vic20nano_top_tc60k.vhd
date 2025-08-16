@@ -16,9 +16,12 @@ entity VIC20_TOP_console60k is
     reset       : in std_logic; -- S2 button
     user        : in std_logic; -- S1 button
     leds_n      : out std_logic_vector(1 downto 0);
-    -- USB-C BL616 UART
-  --uart_rx     : in std_logic;
-  --uart_tx     : out std_logic;
+    -- onboard USB-C Tang BL616 UART
+    uart_rx     : in std_logic;
+    uart_tx     : out std_logic;
+    -- monitor port
+    bl616_mon_tx : out std_logic;
+    bl616_mon_rx : in std_logic;
     -- external hw pin UART
     uart_ext_rx : in std_logic;
     uart_ext_tx : out std_logic;
@@ -398,8 +401,6 @@ signal paddle_2_analogB  : std_logic;
 signal flash_ready       : std_logic;
 signal shift_mod         : std_logic_vector(1 downto 0);
 signal int_out_n         : std_logic;
-signal uart_rx           : std_logic :='0';
-signal uart_tx           : std_logic;
 signal spi_ext           : std_logic;
 
 constant TAP_ADDR      : std_logic_vector(22 downto 0) := 23x"200000";
@@ -433,6 +434,10 @@ component CLKDIV
 end component;
 
 begin
+
+  -- BL616 console to hw pins for external USB-UART adapter
+  uart_tx <= bl616_mon_rx;
+  bl616_mon_tx <= uart_rx;
 
 pwr_sav <= '1';
 
@@ -1483,7 +1488,7 @@ begin
   --user_port_cb1_in <= user_port_cb1_out;
   user_port_cb2_in <= user_port_cb2_out;
 
-  uart_tx <= user_port_cb2_out;
+  -- uart_tx <= user_port_cb2_out; // blocked by onboard bl616
   user_port_cb1_in <= uart_rx_filtered;
   user_port_in(0) <= uart_rx_filtered;
   -- Zeromodem
