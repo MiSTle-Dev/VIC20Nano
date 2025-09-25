@@ -79,7 +79,7 @@
   </actions>
   
   <menu label="VIC20Nano">
- <button label="Detach Cartridge & Reset" action="detach_reset_hide"/>
+ <button label="Detach Cartridge &amp; Reset" action="detach_reset_hide"/>
     <menu label="System">
       <list label="Joyport:" id="Q" default="1">
  <listentry label="Retro D9" value="0"/>
