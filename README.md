@@ -17,7 +17,7 @@ The VIC20Nano is a port of some [MiST](https://github.com/mist-devel/mist-board/
 This project relies on a µC being connected to the FPGA. --> [MiSTle-Dev wiki](https://github.com/MiSTle-Dev/.github/wiki) <--  
 
 > [!NOTE]
-> If you don't need the WIFI modem on a TN20K then even the onboard BL616 µC (normally used for bitstream programming) can be used. A dedicated FPGA bitstream and FPGA companion firmware is needed in that configuration. The onboard BL616 µC is presently supported for TN20K, Console 60K and Primer 25k board. WIFI modem is supported on Console 60K too (requires I-PEX MHF4 connector antenna)
+> If you don't need the WIFI modem on a TN20K then even the onboard BL616 µC (normally used for bitstream programming) can be used. A dedicated FPGA bitstream and FPGA companion firmware is needed in that configuration. The onboard BL616 µC is presently supported for TN20K, Console 60K, Primer 25k and Mega 138kPro board. WIFI modem is supported on Console 60K too (requires I-PEX MHF4 connector antenna)
 
 Original VIC-20 core by [MikeJ (Mike Johnson)](https://www.fpgaarcade.com/author/mikej/) and [WoS (Wolfgang Scherr)](https://www.researchgate.net/profile/Wolfgang_Scherr2), C1541 by [darfpga](https://github.com/darfpga).  
 All HID components and µC firmware by Till Harbaum
