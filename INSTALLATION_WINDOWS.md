@@ -87,7 +87,7 @@ These DOS for the c1541 emulation can later be selected from the on-screen-displ
 **At a glance the memory layout of the SPI Flash:**
 |                           |          |          |          |        |          |        |        |
 |-                          |-         |-         |-         | -      |-         |-       | -      |
-| Type                      | TN20k    | TP20k    |TP25k     |TM60k / TC60k|TM138k Pro|  TN9k  |        |
+| Type                      | TN20k    | TP20k    |TP25k     |TM60k / TC60k/138k|TM138k Pro|  TN9k  |        |
 | FPGA bitstream            | 0x000000 | 0x000000 | 0x000000 |0x000000| 0x000000 |  -     |ROM size|
 | reserved for Atari ST ROM | 0x100000 | 0x100000 | 0x100000 | -      | 0x900000 |  -     | -      |
 | c1541 Dolphin DOS 2       | 0x200000 | 0x200000 | 0x200000 |0x700000| 0xA00000 |  -     |32k     |

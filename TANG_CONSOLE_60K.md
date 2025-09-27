@@ -1,6 +1,6 @@
-# VIC20Nano on Tang Console 60K NEO
+# VIC20Nano on Tang Console 60K / 138K NEO
 
-VIC20Nano can be used in the [Tang Console 60K NEO](https://wiki.sipeed.com/hardware/en/tang/tang-console/mega-console.html).
+VIC20Nano can be used in the [Tang Console 60K / 138K NEO](https://wiki.sipeed.com/hardware/en/tang/tang-console/mega-console.html).
 
 Besides the significantly bigger FPGA over the Tang Nano 20K, the Tang Mega 60K adds several more features of
 which some can be used in the area of retro computing as well. 
@@ -23,6 +23,12 @@ is in additionto HDMI actiavted.
 
 The firmware for the M0S Dock / PiPico is the [same version as for the Tang
 Nano 20K and all other boards](https://github.com/harbaum/FPGA-Companion).
+
+60K
+C1541 FLASH address: 0x700000  
+
+138K
+C1541 FLASH address: 0x700000  
 
 The whole setup will look like this:
 
