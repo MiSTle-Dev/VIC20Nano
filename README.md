@@ -75,9 +75,9 @@ See [Tang Mega 60K NEO](TANG_MEGA_60K.md)
 
 See [Tang Mega 138K Pro](TANG_MEGA_138K.md)
 
-## VIC20Nano on Tang Console 60k NEO
+## VIC20Nano on Tang Console 60k / 138k NEO
 
-See [Tang Console 60K NEO](TANG_CONSOLE_60K.md)
+See [Tang Console 60K / 138K NEO](TANG_CONSOLE_60K.md)
 
 ## VIC20Nano with LCD and Speaker
 
