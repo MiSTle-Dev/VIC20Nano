@@ -63,11 +63,11 @@
         <File path="src/t65/T65_ALU.vhd" type="file.vhdl" enable="1"/>
         <File path="src/t65/T65_MCode.vhd" type="file.vhdl" enable="1"/>
         <File path="src/t65/T65_Pack.vhd" type="file.vhdl" enable="1"/>
-        <File path="src/tang/console138k_bl616/vic20nano_top_tc138k.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/tang/console138k_bl616/vic20nano_top.vhd" type="file.vhdl" enable="1"/>
         <File path="src/vic20_clocks.vhd" type="file.vhdl" enable="1"/>
         <File path="src/vic20_keyboard.vhd" type="file.vhdl" enable="1"/>
         <File path="src/vic20_tp25k.vhd" type="file.vhdl" enable="1"/>
-        <File path="src/tang/console138k_bl616/vic20nano_top_tc138k.cst" type="file.cst" enable="1"/>
-        <File path="src/tang/console138k_bl616/vic20nano_top_tc138k.sdc" type="file.sdc" enable="1"/>
+        <File path="src/tang/console138k_bl616/vic20nano_top.cst" type="file.cst" enable="1"/>
+        <File path="src/tang/console138k_bl616/vic20nano_top.sdc" type="file.sdc" enable="1"/>
     </FileList>
 </Project>

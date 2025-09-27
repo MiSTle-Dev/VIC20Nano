@@ -1097,7 +1097,7 @@ port map(
     resetn    => pll_locked,
     ready     => flash_ready,
     busy      => open,
-    address   => (x"A" & "000" & dos_sel & c1541rom_addr),
+    address   => (x"7" & "000" & dos_sel & c1541rom_addr),  -- 64Mbit 
     cs        => c1541rom_cs,
     dout      => c1541rom_data,
     mspi_cs   => mspi_cs,
