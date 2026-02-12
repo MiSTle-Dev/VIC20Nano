@@ -12,28 +12,33 @@ use IEEE.numeric_std.ALL;
 entity VIC20_TOP is
   port
   (
+    reconfign    : out std_logic := 'Z';
     clk_27mhz    : in std_logic;
-    reset        : in std_logic; -- S2 button
-    user         : in std_logic; -- S1 button
+    key_reset    : in std_logic; -- S2 button
+    key_user     : in std_logic; -- S1 button
     leds_n       : out std_logic_vector(5 downto 0);
     io           : in std_logic_vector(5 downto 0);
-    -- onboard USB-C Tang BL616 UART
+    -- USB-C BL616 UART
     uart_rx      : in std_logic;
-    uart_tx      : out std_logic;
+    --uart_tx      : out std_logic;
+    -- external hw pin UART
+    --uart_ext_rx  : in std_logic;
+    --uart_ext_tx  : out std_logic;
     -- monitor port
     bl616_mon_tx : out std_logic;
-    bl616_mon_rx : in std_logic;
-    -- external hw pin UART
-    uart_ext_rx  : in std_logic;
-    uart_ext_tx  : out std_logic;
-    -- SPI interface Sipeed M0S Dock external BL616 uC
-    m0s          : inout std_logic_vector(4 downto 0);
+    -- SPI interface external uC
+    pmod_companion_din : in std_logic;
+    pmod_companion_dout : out std_logic;
+    pmod_companion_ss : in std_logic;
+    pmod_companion_clk : in std_logic;
+    pmod_companion_intn : out std_logic;
     -- SPI connection to onboard BL616
     spi_sclk    : in std_logic;
     spi_csn     : in std_logic;
     spi_dir     : out std_logic;
     spi_dat     : in std_logic;
     spi_irqn    : out std_logic;
+    --
     tmds_clk_n   : out std_logic;
     tmds_clk_p   : out std_logic;
     tmds_d_n     : out std_logic_vector( 2 downto 0);
@@ -208,7 +213,6 @@ signal spi_io_din     : std_logic;
 signal spi_io_ss      : std_logic;
 signal spi_io_clk     : std_logic;
 signal spi_io_dout    : std_logic;
-signal spi_ext        : std_logic;
 signal disk_g64       : std_logic;
 signal disk_g64_d     : std_logic;
 signal c1541_reset    : std_logic;
@@ -377,7 +381,11 @@ signal ds_miso_i       : std_logic;
 signal flash_ready     : std_logic;
 signal pll_locked_comb : std_logic;
 signal shift_mod       : std_logic_vector(1 downto 0);
-signal int_out_n       : std_logic;
+signal uart_tx_i       : std_logic;
+signal spi_ext         : std_logic;
+signal spi_intn        : std_logic;
+signal uart_ext_tx     : std_logic;
+signal uart_ext_rx     : std_logic;
 
 constant TAP_ADDR      : std_logic_vector(22 downto 0) := 23x"200000";
 
@@ -439,38 +447,29 @@ component rPLL
 end component;
 
 begin
-  -- BL616 console to hw pins for external USB-UART adapter
-  uart_tx <= bl616_mon_rx;
-  bl616_mon_tx <= uart_rx;
+reconfign <= 'Z';
 
--- by default the internal SPI is being used. Once there is
--- a select from the external spi (M0S Dock) , then the connection is being switched
-process (clk32, pll_locked)
+-- BL616 console to hw pins for external USB-UART adapter
+bl616_mon_tx <= uart_rx;
+
+process (clk32)
 begin
-  if pll_locked = '0' then
-    spi_ext <= '0';
-  elsif rising_edge(clk32) then
-    spi_ext <= spi_ext;
-    if m0s(2) = '0' then
-        spi_ext <= '1';
+  if rising_edge(clk32) then
+    if pll_locked = '0' then
+      spi_ext <= '0';
+    elsif pmod_companion_ss = '0' then
+      spi_ext <= '1';
     end if;
   end if;
 end process;
 
-  -- map output data onto both spi outputs
-  spi_io_din  <= m0s(1) when spi_ext = '1' else spi_dat;
-  spi_io_ss   <= m0s(2) when spi_ext = '1' else spi_csn;
-  spi_io_clk  <= m0s(3) when spi_ext = '1' else spi_sclk;
-
-  -- onboard BL616
-  spi_dir     <= spi_io_dout;
-  spi_irqn    <= int_out_n;
-  -- external M0S Dock BL616 / PiPico  / ESP32
-  m0s(0)      <= spi_io_dout;
-  m0s(4)      <= int_out_n;
-
--- https://store.curiousinventor.com/guides/PS2/
--- https://hackaday.io/project/170365-blueretro/log/186471-playstation-playstation-2-spi-interface
+spi_io_din <= pmod_companion_din when spi_ext = '1' else spi_dat;
+spi_io_ss <= pmod_companion_ss when spi_ext = '1' else spi_csn;
+spi_io_clk <= pmod_companion_clk when spi_ext = '1' else spi_sclk;
+spi_dir <= spi_io_dout;
+spi_irqn <= spi_intn;
+pmod_companion_dout <= spi_io_dout;
+pmod_companion_intn <= spi_intn;
 
 ds_cs     <= ds_cs_i when port_1_sel <= "0110" else '0';
 ds2_cs    <= ds_cs_i when port_1_sel > "0110" else '0';
@@ -1156,11 +1155,11 @@ module_inst: entity work.sysctrl
   port_in_strobe      => open,
   port_in_data        => open,
 
-  int_out_n           => int_out_n,
+  int_out_n           => spi_intn,
   int_in              => unsigned'(x"0" & sdc_int & '0' & hid_int & '0'),
   int_ack             => int_ack,
 
-  buttons             => unsigned'(reset & user), -- S0 and S1 buttons on Tang Nano 20k
+  buttons             => unsigned'(key_user & key_reset), -- S2 and S1 buttons
   leds                => system_leds,         -- two leds can be controlled from the MCU
   color               => ws2812_color -- a 24bit color to e.g. be used to drive the ws2812
 );
@@ -1508,7 +1507,7 @@ port map (
 
 -- external HW pin UART interface
 uart_rx_muxed <= uart_rx when system_uart = "00" else uart_ext_rx when system_uart = "01" else '1';
-uart_ext_tx <= uart_tx;
+uart_ext_tx <= uart_tx_i;
 
 -- UART_RX synchronizer
 process(clk32)
@@ -1539,7 +1538,7 @@ begin
   --user_port_cb1_in <= user_port_cb1_out;
   user_port_cb2_in <= user_port_cb2_out;
 
-  -- uart_tx <= user_port_cb2_out;  -- blocked 
+  uart_tx_i <= user_port_cb2_out;
   user_port_cb1_in <= uart_rx_filtered;
   user_port_in(0) <= uart_rx_filtered;
   -- Zeromodem
