@@ -54,9 +54,9 @@ add_file src/t65/T65_Pack.vhd
 add_file src/vic20.vhd
 add_file src/vic20_clocks.vhd
 add_file src/vic20_keyboard.vhd
-add_file src/vic20nano_top_tn20k.vhd
-add_file src/vic20nano_top_tn20k.cst
-add_file src/vic20nano_top_tn20k.sdc
+add_file src/tang/nano20k/vic20nano_top_tn20k.vhd
+add_file src/tang/nano20k/vic20nano_top_tn20k.cst
+add_file src/tang/nano20k/vic20nano_top_tn20k.sdc
 add_file src/loader_sd_card.sv
 add_file src/c1530.vhd
 add_file src/fifo_sc_hs/fifo_sc_hs.vhd
@@ -73,7 +73,7 @@ set_option -use_mspi_as_gpio 1
 set_option -use_sspi_as_gpio 1
 set_option -rw_check_on_ram 0
 set_option -user_code 00000001
-set_option -multi_boot 1
+set_option -multi_boot 0
 set_option -mspi_jump 0
 
 #run syn

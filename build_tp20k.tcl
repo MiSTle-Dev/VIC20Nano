@@ -24,7 +24,7 @@ add_file src/misc/sd_card.v
 add_file src/misc/sd_rw.v
 add_file src/misc/sdcmd_ctrl.v
 add_file src/misc/sysctrl.v
-add_file src/misc/video.v
+add_file src/tang/console60k/video.v
 add_file src/misc/video_analyzer.v
 add_file src/misc/ws2812.v
 add_file src/c1541/c1541_logic.vhd
@@ -78,7 +78,7 @@ set_option -use_ready_as_gpio 1
 set_option -use_done_as_gpio 1
 set_option -rw_check_on_ram 0
 set_option -user_code 00000001
-set_option -multi_boot 1
+set_option -multi_boot 0
 set_option -mspi_jump 0
 
 #run syn

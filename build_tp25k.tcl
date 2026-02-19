@@ -52,9 +52,11 @@ add_file src/t65/T65_Pack.vhd
 add_file src/vic20_tp25k.vhd
 add_file src/vic20_clocks.vhd
 add_file src/vic20_keyboard.vhd
-add_file src/gowin_pll/gowin_pll_flash.vhd
-add_file src/gowin_pll/gowin_pll_ntsc.vhd
-add_file src/gowin_pll/gowin_pll_pal.vhd
+add_file src/tang/primer25k/gowin_pll_ntsc.vhd
+add_file src/tang/primer25k/gowin_pll_ntsc_mod.vhd
+add_file src/tang/primer25k/gowin_pll_pal.vhd
+add_file src/tang/primer25k/gowin_pll_pal_mod.vhd
+add_file src/tang/primer25k/pll_init.v
 add_file src/tang/primer25k/vic20nano_top_tp25k.vhd
 add_file src/tang/primer25k/vic20nano_top_tp25k.cst
 add_file src/tang/primer25k/vic20nano_top_tp25k.sdc

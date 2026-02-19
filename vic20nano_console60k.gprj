@@ -34,6 +34,7 @@
         <File path="src/misc/vic20_keymap.v" type="file.verilog" enable="1"/>
         <File path="src/misc/video_analyzer.v" type="file.verilog" enable="1"/>
         <File path="src/sdram.sv" type="file.verilog" enable="1"/>
+        <File path="src/tang/console60k/pll_init.v" type="file.verilog" enable="1"/>
         <File path="src/tang/console60k/video.v" type="file.verilog" enable="1"/>
         <File path="src/c1530.vhd" type="file.vhdl" enable="1"/>
         <File path="src/c1541/c1541_logic.vhd" type="file.vhdl" enable="1"/>
@@ -45,9 +46,6 @@
         <File path="src/gowin_dpb/gowin_dpb_1k_x4.vhd" type="file.vhdl" enable="1"/>
         <File path="src/gowin_dpb/gowin_dpb_2k.vhd" type="file.vhdl" enable="1"/>
         <File path="src/gowin_dpb/gowin_dpb_8k.vhd" type="file.vhdl" enable="1"/>
-        <File path="src/gowin_pll/gowin_pll_60k_flash.vhd" type="file.vhdl" enable="1"/>
-        <File path="src/gowin_pll/gowin_pll_60k_ntsc.vhd" type="file.vhdl" enable="1"/>
-        <File path="src/gowin_pll/gowin_pll_60k_pal.vhd" type="file.vhdl" enable="1"/>
         <File path="src/gowin_prom/gowin_prom_basic.vhd" type="file.vhdl" enable="1"/>
         <File path="src/gowin_prom/gowin_prom_char.vhd" type="file.vhdl" enable="1"/>
         <File path="src/gowin_sdpb/gowin_sdpb_kernal_8k_gw5a.vhd" type="file.vhdl" enable="1"/>
@@ -63,6 +61,10 @@
         <File path="src/t65/T65_ALU.vhd" type="file.vhdl" enable="1"/>
         <File path="src/t65/T65_MCode.vhd" type="file.vhdl" enable="1"/>
         <File path="src/t65/T65_Pack.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/tang/console60k/gowin_pll_60k_ntsc.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/tang/console60k/gowin_pll_60k_ntsc_mod.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/tang/console60k/gowin_pll_60k_pal.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/tang/console60k/gowin_pll_60k_pal_mod.vhd" type="file.vhdl" enable="1"/>
         <File path="src/tang/console60k/vic20nano_top_tc60k.vhd" type="file.vhdl" enable="1"/>
         <File path="src/vic20_clocks.vhd" type="file.vhdl" enable="1"/>
         <File path="src/vic20_keyboard.vhd" type="file.vhdl" enable="1"/>
