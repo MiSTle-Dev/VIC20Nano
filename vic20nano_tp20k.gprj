@@ -33,9 +33,9 @@
         <File path="src/misc/sdcmd_ctrl.v" type="file.verilog" enable="1"/>
         <File path="src/misc/sysctrl.v" type="file.verilog" enable="1"/>
         <File path="src/misc/vic20_keymap.v" type="file.verilog" enable="1"/>
-        <File path="src/misc/video.v" type="file.verilog" enable="1"/>
         <File path="src/misc/video_analyzer.v" type="file.verilog" enable="1"/>
         <File path="src/misc/ws2812.v" type="file.verilog" enable="1"/>
+        <File path="src/tang/console60k/video.v" type="file.verilog" enable="1"/>
         <File path="src/tang/primer20k/ddr3_controller.v" type="file.verilog" enable="1"/>
         <File path="src/tang/primer20k/ddr3_tester.v" type="file.verilog" enable="1"/>
         <File path="src/tang/primer20k/memory_controller.v" type="file.verilog" enable="1"/>

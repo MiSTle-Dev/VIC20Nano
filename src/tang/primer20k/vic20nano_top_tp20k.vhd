@@ -16,7 +16,7 @@ entity VIC20_TOP_tp20k is
     reset       : in std_logic; -- S2 button
     user        : in std_logic; -- S1 button
     leds_n      : inout std_logic_vector(5 downto 0);
-    io          : in std_logic_vector(4 downto 0);
+    --io          : in std_logic_vector(4 downto 0);
     uart_rx     : in std_logic;
     uart_tx     : out std_logic;
     -- external hw pin UART
@@ -29,6 +29,20 @@ entity VIC20_TOP_tp20k is
     tmds_clk_p  : out std_logic;
     tmds_d_n    : out std_logic_vector( 2 downto 0);
     tmds_d_p    : out std_logic_vector( 2 downto 0);
+    -- internal lcd
+    lcd_dclk    : out std_logic; -- lcd is RGB 565
+    lcd_hs      : out std_logic; -- lcd horizontal synchronization
+    lcd_vs      : out std_logic; -- lcd vertical synchronization        
+    lcd_de      : out std_logic; -- lcd data enable     
+    lcd_bl      : out std_logic; -- lcd backlight control
+    lcd_r       : out std_logic_vector(4 downto 0);  -- lcd red
+    lcd_g       : out std_logic_vector(5 downto 0);  -- lcd green
+    lcd_b       : out std_logic_vector(4 downto 0);  -- lcd blue
+    -- audio
+    hp_bck      : out std_logic;
+    hp_ws       : out std_logic;
+    hp_din      : out std_logic;
+    pa_en       : out std_logic;
     -- sd interface
     sd_clk      : out std_logic;
     sd_cmd      : inout std_logic;
@@ -50,15 +64,15 @@ entity VIC20_TOP_tp20k is
     DDR3_DM     : out std_logic_vector(1 downto 0);
 
     -- Gamepad Dualshock P0
-    ds_clk          : out std_logic;
-    ds_mosi         : out std_logic;
-    ds_miso         : in std_logic;
-    ds_cs           : out std_logic;
+    --ds_clk          : out std_logic;
+    --ds_mosi         : out std_logic;
+    --ds_miso         : in std_logic;
+    --ds_cs           : out std_logic;
     -- Gamepad DualShock P1
-    ds2_clk       : out std_logic;
-    ds2_mosi      : out std_logic;
-    ds2_miso      : in std_logic;
-    ds2_cs        : out std_logic;
+    --ds2_clk       : out std_logic;
+    --ds2_mosi      : out std_logic;
+    --ds2_miso      : in std_logic;
+    --ds2_cs        : out std_logic;
     -- spi flash interface
     mspi_cs       : out std_logic;
     mspi_clk      : out std_logic;
@@ -516,80 +530,78 @@ begin
   spi_io_din  <= m0s(1);
   spi_io_ss   <= m0s(2);
   spi_io_clk  <= m0s(3);
-  m0s(0)      <= spi_io_dout; -- M0 Dock
+  m0s(0)      <= spi_io_dout;
 
--- https://store.curiousinventor.com/guides/PS2/
--- https://hackaday.io/project/170365-blueretro/log/186471-playstation-playstation-2-spi-interface
 
-gamepad_p1: entity work.dualshock2
-    port map (
-    clk           => clk32,
-    rst           => resetvic20,
-    vsync         => vsync,
-    ds2_dat       => ds_miso,
-    ds2_cmd       => ds_mosi,
-    ds2_att       => ds_cs,
-    ds2_clk       => ds_clk,
-    ds2_ack       => '0',
-    analog        => paddle_1_analogA or paddle_1_analogB,
-    stick_lx      => paddle_1,
-    stick_ly      => paddle_2,
-    stick_rx      => open,
-    stick_ry      => open,
-    key_up        => key_up,
-    key_down      => key_down,
-    key_left      => key_left,
-    key_right     => key_right,
-    key_l1        => key_l1,
-    key_l2        => key_l2,
-    key_r1        => key_r1,
-    key_r2        => key_r2,
-    key_triangle  => key_triangle,
-    key_square    => key_square,
-    key_circle    => key_circle,
-    key_cross     => key_cross,
-    key_start     => key_start,
-    key_select    => key_select,
-    key_lstick    => open,
-    key_rstick    => open,
-    debug1        => open,
-    debug2        => open
-    );
+--gamepad_p1: entity work.dualshock2
+--    port map (
+--    clk           => clk32,
+--    rst           => resetvic20,
+--    vsync         => vsync,
+--    ds2_dat       => ds_miso,
+--    ds2_cmd       => ds_mosi,
+--    ds2_att       => ds_cs,
+--    ds2_clk       => ds_clk,
+--    ds2_ack       => '0',
+--    analog        => paddle_1_analogA or paddle_1_analogB,
+--    stick_lx      => paddle_1,
+--    stick_ly      => paddle_2,
+--    stick_rx      => open,
+--    stick_ry      => open,
+--    key_up        => key_up,
+--    key_down      => key_down,
+--    key_left      => key_left,
+--    key_right     => key_right,
+--    key_l1        => key_l1,
+--    key_l2        => key_l2,
+--    key_r1        => key_r1,
+--    key_r2        => key_r2,
+--    key_triangle  => key_triangle,
+--    key_square    => key_square,
+--    key_circle    => key_circle,
+--    key_cross     => key_cross,
+--    key_start     => key_start,
+--    key_select    => key_select,
+--    key_lstick    => open,
+--    key_rstick    => open,
+--    debug1        => open,
+--    debug2        => open
+--    );
 
-    gamepad_p2: entity work.dualshock2
-    port map (
-    clk           => clk32,
-    rst           => resetvic20,
-    vsync         => vsync,
-    ds2_dat       => ds2_miso,
-    ds2_cmd       => ds2_mosi,
-    ds2_att       => ds2_cs,
-    ds2_clk       => ds2_clk,
-    ds2_ack       => '0',
-    analog        => paddle_2_analogA or paddle_2_analogB,
-    stick_lx      => paddle_3,
-    stick_ly      => paddle_4,
-    stick_rx      => open,
-    stick_ry      => open,
-    key_up        => key_up2,
-    key_down      => key_down2,
-    key_left      => key_left2,
-    key_right     => key_right2,
-    key_l1        => key_l12,
-    key_l2        => key_l22,
-    key_r1        => key_r12,
-    key_r2        => key_r22,
-    key_triangle  => key_triangle2,
-    key_square    => key_square2,
-    key_circle    => key_circle2,
-    key_cross     => key_cross2,
-    key_start     => key_start2,
-    key_select    => key_select2,
-    key_lstick    => open,
-    key_rstick    => open,
-    debug1        => open,
-    debug2        => open
-    );
+--    gamepad_p2: entity work.dualshock2
+--    port map (
+--    clk           => clk32,
+--    rst           => resetvic20,
+--    vsync         => vsync,
+--    ds2_dat       => ds2_miso,
+--    ds2_cmd       => ds2_mosi,
+--    ds2_att       => ds2_cs,
+--    ds2_clk       => ds2_clk,
+--    ds2_ack       => '0',
+--    analog        => paddle_2_analogA or paddle_2_analogB,
+--    stick_lx      => paddle_3,
+--    stick_ly      => paddle_4,
+--    stick_rx      => open,
+--    stick_ry      => open,
+--    key_up        => key_up2,
+--    key_down      => key_down2,
+--    key_left      => key_left2,
+--    key_right     => key_right2,
+--    key_l1        => key_l12,
+--    key_l2        => key_l22,
+--    key_r1        => key_r12,
+--    key_r2        => key_r22,
+--    key_triangle  => key_triangle2,
+--    key_square    => key_square2,
+--    key_circle    => key_circle2,
+--    key_cross     => key_cross2,
+--    key_start     => key_start2,
+--    key_select    => key_select2,
+--    key_lstick    => open,
+--    key_rstick    => open,
+--    debug1        => open,
+--    debug2        => open
+--    );
 
 led_ws2812: entity work.ws2812
   port map
@@ -774,6 +786,10 @@ audio_l <= (vic_audio & "000000000000") or (5x"00" & cass_aud & 12x"00000");
 audio_r <= audio_l;
 
 video_inst: entity work.video 
+generic map
+      (
+        STEREO  => true
+      )
 port map(
       pll_lock     => pll_locked, 
       clk          => clk32,
@@ -808,7 +824,21 @@ port map(
       tmds_clk_n => tmds_clk_n,
       tmds_clk_p => tmds_clk_p,
       tmds_d_n   => tmds_d_n,
-      tmds_d_p   => tmds_d_p
+      tmds_d_p   => tmds_d_p,
+
+      lcd_clk  => lcd_dclk,
+      lcd_hs_n => lcd_hs,
+      lcd_vs_n => lcd_vs,
+      lcd_de   => lcd_de,
+      lcd_r(7 downto 3) => lcd_r,
+      lcd_g(7 downto 2) => lcd_g,
+      lcd_b(7 downto 3) => lcd_b,
+      lcd_bl   => lcd_bl,
+
+      hp_bck   => hp_bck,
+      hp_ws    => hp_ws,
+      hp_din   => hp_din,
+      pa_en    => pa_en
       );
 
 -- MegaCart and Tape
@@ -1096,11 +1126,16 @@ begin
 end process;
 leds(0) <= led1541;
 
+
+-- PMOD interfaces disabled in favor of LCD 
 --                    6   5  4  3  2  1  0
 --                  TR3 TR2 TR RI LE DN UP digital c64 
-joyDS2_p1  <= key_circle  & key_cross  & key_square  & key_right  & key_left  & key_down  & key_up;
-joyDS2_p2  <= key_circle2 & key_cross2 & key_square2 & key_right2 & key_left2 & key_down2 & key_up2;
-joyDigital <= not('1' & '1' & io(0) & io(3) & io(4) & io(1) & io(2));
+--joyDS2_p1  <= key_circle  & key_cross  & key_square  & key_right  & key_left  & key_down  & key_up;
+--joyDS2_p2  <= key_circle2 & key_cross2 & key_square2 & key_right2 & key_left2 & key_down2 & key_up2;
+--joyDigital <= not('1' & '1' & io(0) & io(3) & io(4) & io(1) & io(2));
+joyDS2_p1  <= (others => '0');
+joyDS2_p1  <= (others => '0');
+joyDigital <= (others => '0');
 joyUsb1    <= joystick1(6 downto 4) & joystick1(0) & joystick1(1) & joystick1(2) & joystick1(3);
 joyUsb2    <= joystick2(6 downto 4) & joystick2(0) & joystick2(1) & joystick2(2) & joystick2(3);
 joyNumpad  <= '0' & numpad(5 downto 4) & numpad(0) & numpad(1) & numpad(2) & numpad(3);
@@ -1111,7 +1146,8 @@ joyUsb1A   <= "00" & '0' & joystick1(5) & joystick1(4) & "00"; -- Y,X button
 joyUsb2A   <= "00" & '0' & joystick2(5) & joystick2(4) & "00"; -- Y,X button
 
 -- send external DB9 joystick port to µC
-db9_joy <= not('1' & io(0), io(2), io(1), io(4), io(3));
+--db9_joy <= not('1' & io(0), io(2), io(1), io(4), io(3));
+db9_joy <= (others => '0');
 
 process(clk32)
 begin
