@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------
---  VIC20 Top level for Tang Console 60k
---  2025 Stefan Voss
+--  VIC20 Top level for Tang Mega 138k Pro
+--  2024 Stefan Voss
 --  based on the work of many others
 --
 -------------------------------------------------------------------------
@@ -9,23 +9,27 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use IEEE.numeric_std.ALL;
 
-entity VIC20_TOP_console60k is
+entity VIC20_TOP_tm138k is
   port
   (
     bl616_jtagsel : in std_logic;
     jtagseln    : out std_logic := '0';
     reconfign   : out std_logic := 'Z';
     clk         : in std_logic;
-    key_reset_n : in std_logic; -- S2 button
-    key_user_n  : in std_logic; -- S1 button
-    leds_n      : out std_logic_vector(1 downto 0);
+    key_n       : in std_logic_vector(3 downto 0);
+    key_som_n   : in std_logic; -- SOM button
+    leds_n      : out std_logic_vector(5 downto 0);
+    somleds_n   : out std_logic_vector(1 downto 0);
+    io          : in std_logic_vector(5 downto 0);
     -- USB-C BL616 UART
     uart_rx     : in std_logic;
     --uart_tx     : out std_logic;
+    --bl616_mon_rx : in std_logic;
     -- external hw pin UART
     uart_ext_rx : in std_logic;
     uart_ext_tx : out std_logic;
     -- monitor port
+    twimux       : out std_logic_vector(2 downto 0);
     bl616_mon_tx : out std_logic;
     -- SPI interface external uC
     pmod_companion_din : in std_logic;
@@ -39,29 +43,30 @@ entity VIC20_TOP_console60k is
     spi_dir     : out std_logic;
     spi_dat     : in std_logic;
     spi_irqn    : out std_logic;
-    -- internal lcd
-    lcd_clk     : out std_logic; -- lcd clk
-    lcd_hs      : out std_logic; -- lcd horizontal synchronization
-    lcd_vs      : out std_logic; -- lcd vertical synchronization        
-    lcd_de      : out std_logic; -- lcd data enable     
-    lcd_bl      : out std_logic; -- lcd backlight control
-    lcd_r       : out std_logic_vector(7 downto 0);  -- lcd red
-    lcd_g       : out std_logic_vector(7 downto 0);  -- lcd green
-    lcd_b       : out std_logic_vector(7 downto 0);  -- lcd blue
-    -- audio
-    hp_bck      : out std_logic;
-    hp_ws       : out std_logic;
-    hp_din      : out std_logic;
-    pa_en       : out std_logic;
     --
     tmds_clk_n  : out std_logic;
     tmds_clk_p  : out std_logic;
     tmds_d_n    : out std_logic_vector( 2 downto 0);
     tmds_d_p    : out std_logic_vector( 2 downto 0);
+    -- internal lcd
+    lcd_clk     : out std_logic; -- lcd is RGB 565
+    lcd_hs      : out std_logic; -- lcd horizontal synchronization
+    lcd_vs      : out std_logic; -- lcd vertical synchronization        
+    lcd_de      : out std_logic; -- lcd data enable     
+    lcd_bl      : out std_logic; -- lcd backlight control
+    lcd_r       : out std_logic_vector(5 downto 0);  -- lcd red
+    lcd_g       : out std_logic_vector(5 downto 0);  -- lcd green
+    lcd_b       : out std_logic_vector(5 downto 0);  -- lcd blue
+    -- audio
+    hp_bck      : out std_logic;
+    hp_ws       : out std_logic;
+    hp_din      : out std_logic;
+    pa_en       : out std_logic;
     -- sd interface
     sd_clk      : out std_logic;
     sd_cmd      : inout std_logic;
     sd_dat      : inout std_logic_vector(3 downto 0);
+    ws2812      : out std_logic;
     -- MiSTer SDRAM module
     O_sdram_clk     : out std_logic;
     O_sdram_cs_n    : out std_logic; -- chip select
@@ -92,7 +97,7 @@ entity VIC20_TOP_console60k is
     );
 end;
 
-architecture Behavioral_top of VIC20_TOP_console60k is
+architecture Behavioral_top of VIC20_TOP_tm138k is
 
 signal clk64          : std_logic;
 signal clk32          : std_logic;
@@ -119,7 +124,6 @@ attribute syn_keep of clk_pixel_x5_pal  : signal is 1;
 attribute syn_keep of clk_pixel_x5_ntsc : signal is 1;
 attribute syn_keep of clk_pixel_x5  : signal is 1;
 attribute syn_keep of mspi_clk_x5   : signal is 1;
-
 signal audio_data_l  : std_logic_vector(17 downto 0);
 signal audio_data_r  : std_logic_vector(17 downto 0);
 
@@ -235,6 +239,7 @@ signal c1541_osd_reset : std_logic;
 signal system_wide_screen : std_logic;
 signal system_floppy_wprot : std_logic_vector(1 downto 0);
 signal leds           : std_logic_vector(5 downto 0);
+signal somleds        : std_logic_vector(1 downto 0);
 signal system_leds    : std_logic_vector(1 downto 0);
 signal led1541        : std_logic;
 
@@ -395,18 +400,20 @@ signal system_reset_d    : std_logic;
 signal disk_pause        : std_logic;
 signal tap_data_in       : std_logic_vector(7 downto 0);
 signal p2_hD             : std_logic;
-signal system_uart       : std_logic_vector(1 downto 0);
-signal uart_rx_muxed     : std_logic;
-signal paddle_1_analogA  : std_logic;
-signal paddle_1_analogB  : std_logic;
-signal paddle_2_analogA  : std_logic;
-signal paddle_2_analogB  : std_logic;
-signal flash_ready       : std_logic;
-signal shift_mod         : std_logic_vector(1 downto 0);
-signal spi_intn          : std_logic;
-signal uart_tx_i         : std_logic;
+signal system_uart     : std_logic_vector(1 downto 0);
+signal uart_rx_muxed   : std_logic;
+signal paddle_1_analogA : std_logic;
+signal paddle_1_analogB : std_logic;
+signal paddle_2_analogA : std_logic;
+signal paddle_2_analogB : std_logic;
+signal flash_ready      : std_logic;
+signal shift_mod        : std_logic_vector(1 downto 0);
+signal spi_ext           : std_logic;
+signal spi_intn         : std_logic;
+signal uart_tx_i        : std_logic;
 signal boot_button_detected : std_logic := '1';
-signal spi_ext           : std_logic; 
+signal key_user_n       : std_logic;
+signal key_reset_n      : std_logic;
 
 constant TAP_ADDR      : std_logic_vector(22 downto 0) := 23x"200000";
 
@@ -440,6 +447,9 @@ end component;
 
 begin
 
+  key_reset_n <= key_n(0);
+  key_user_n <= key_n(1);
+
   process (pll_locked_pal)
   begin
     if rising_edge(pll_locked_pal) then
@@ -451,6 +461,7 @@ begin
 -- the external FPGA Companion has been seen
   jtagseln <= '1' when (not pll_locked_pal or boot_button_detected or spi_ext or bl616_jtagsel) = '0' else '0';
   reconfign <= 'Z';  -- <= '0' when bl616_RECONFIGn = '0' else 'Z';
+  twimux <= "100"; -- connect BL616 TWI4 PLL1
   -- BL616 console to hw pins for external USB-UART adapter
   bl616_mon_tx <= uart_rx;
 
@@ -472,6 +483,9 @@ begin
   spi_irqn <= uart_tx_i when spi_ext = '1' else spi_intn;
   pmod_companion_dout <= spi_io_dout;
   pmod_companion_intn <= spi_intn;
+
+  somleds(0) <= not jtagseln;
+  somleds(1) <= not reconfign;
 
 gamepad_p1: entity work.dualshock2
     port map (
@@ -543,13 +557,13 @@ gamepad_p1: entity work.dualshock2
     debug2        => open
     );
 
---led_ws2812: entity work.ws2812
---  port map
---  (
---   clk    => clk32,
---   color  => ws2812_color,
---   data   => ws2812
---  );
+led_ws2812: entity work.ws2812
+  port map
+  (
+   clk    => clk32,
+   color  => ws2812_color,
+   data   => ws2812
+  );
 
 process(clk32, disk_reset)
 variable reset_cnt : integer range 0 to 2147483647;
@@ -728,7 +742,7 @@ audio_r <= audio_l;
 video_inst: entity work.video
 generic map
 (
-  STEREO  => false
+  STEREO  => true
 )
 port map(
       pll_lock     => pll_locked, 
@@ -770,9 +784,9 @@ port map(
       lcd_hs_n => lcd_hs,
       lcd_vs_n => lcd_vs,
       lcd_de   => lcd_de,
-      lcd_r    => lcd_r,
-      lcd_g    => lcd_g,
-      lcd_b    => lcd_b,
+      lcd_r(7 downto 2) => lcd_r,
+      lcd_g(7 downto 2) => lcd_g,
+      lcd_b(7 downto 2) => lcd_b,
       lcd_bl   => lcd_bl,
 
       hp_bck   => hp_bck,
@@ -831,19 +845,19 @@ dram_inst_mist: entity work.sdram
 pll_locked <= pll_locked_pal and pll_locked_ntsc;
 dcsclksel <= "0001" when ntscMode = '0' else "0010";
 
-mainclock_pal: entity work.Gowin_PLL_60k_pal
+mainclock_pal: entity work.Gowin_PLL_138k_pal
 port map (
     lock => pll_locked_pal,
     clkout0 => open,
     clkout1 => clk_pixel_x5_pal,
     clkout2 => clk64_pal,
     clkout3 => clk32_pal,
-    clkout4 => mspi_clk,
+    clkout4 => mspi_clk, -- 64Mhz 180 deg phase
     clkin => clk,
-    mdclk => clk
+    init_clk => clk
 );
 
-mainclock_ntsc: entity work.Gowin_PLL_60k_ntsc
+mainclock_ntsc: entity work.Gowin_PLL_138k_ntsc
 port map (
     lock => pll_locked_ntsc,
     clkout0 => open,
@@ -851,7 +865,7 @@ port map (
     clkout2 => clk64_ntsc,
     clkout3 => clk32_ntsc,
     clkin => clk,
-    mdclk => clk
+    init_clk => clk
 );
 
   clk_switch_1: DCS
@@ -881,16 +895,16 @@ port map (
       CLKIN3 => '0',
       SELFORCE => '1'
   );
-
-leds_n(1 downto 0) <= leds(1 downto 0);
+  
+leds_n <=  not leds;
+somleds_n <=  not somleds;
 leds(0) <= led1541;
-leds(1) <= '0';
 
 --                    6   5  4  3  2  1  0
 --                  TR3 TR2 TR RI LE DN UP digital c64 
 joyDS2_p1  <= key_circle  & key_cross  & key_square  & key_right  & key_left  & key_down  & key_up;
 joyDS2_p2  <= key_circle2 & key_cross2 & key_square2 & key_right2 & key_left2 & key_down2 & key_up2;
-joyDigital <= 7x"00";
+joyDigital <= not('1' & io(5) & io(0) & io(3) & io(4) & io(1) & io(2));
 joyUsb1    <= joystick1(6 downto 4) & joystick1(0) & joystick1(1) & joystick1(2) & joystick1(3);
 joyUsb2    <= joystick2(6 downto 4) & joystick2(0) & joystick2(1) & joystick2(2) & joystick2(3);
 joyNumpad  <= '0' & numpad(5 downto 4) & numpad(0) & numpad(1) & numpad(2) & numpad(3);
@@ -901,7 +915,7 @@ joyUsb1A   <= "00" & '0' & joystick1(5) & joystick1(4) & "00"; -- Y,X button
 joyUsb2A   <= "00" & '0' & joystick2(5) & joystick2(4) & "00"; -- Y,X button
 
 -- send external DB9 joystick port to µC
-db9_joy <= 6x"00";
+db9_joy <= not(io(5) & io(0), io(2), io(1), io(4), io(3));
 
 process(clk32)
 begin
@@ -1105,8 +1119,8 @@ module_inst: entity work.sysctrl
   int_ack             => int_ack,
 
   buttons             => unsigned'(not key_user_n & not key_reset_n), -- S0 and S1 buttons
-  leds                => open,
-  color               => open
+  leds                => open,         -- two leds can be controlled from the MCU
+  color               => ws2812_color -- a 24bit color to e.g. be used to drive the ws2812
 );
 
 -- c1541 ROM's SPI Flash, offset in spi flash $200000
@@ -1116,7 +1130,7 @@ port map(
     resetn    => pll_locked_pal and jtagseln,
     ready     => flash_ready,
     busy      => open,
-    address   => (x"7" & "000" & dos_sel & c1541rom_addr),
+    address   => x"7" & "000" & dos_sel & c1541rom_addr,
     cs        => c1541rom_cs,
     dout      => c1541rom_data,
     mspi_cs   => mspi_cs,
@@ -1237,7 +1251,7 @@ vic_inst: entity work.VIC20
     load_tap          => load_tap,
     load_flt          => load_mc,
     sd_img_size       => sd_img_size,
-    leds              => open,
+    leds              => leds(5 downto 1),
     img_select        => open,
   
     ioctl_download    => ioctl_download,

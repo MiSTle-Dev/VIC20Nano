@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------
---  VIC20 Top level for Tang Console 60k
+--  VIC20 Top level for Tang Console 138k
 --  2025 Stefan Voss
 --  based on the work of many others
 --
@@ -9,7 +9,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use IEEE.numeric_std.ALL;
 
-entity VIC20_TOP_console60k is
+entity VIC20_TOP is
   port
   (
     bl616_jtagsel : in std_logic;
@@ -92,7 +92,7 @@ entity VIC20_TOP_console60k is
     );
 end;
 
-architecture Behavioral_top of VIC20_TOP_console60k is
+architecture Behavioral_top of VIC20_TOP is
 
 signal clk64          : std_logic;
 signal clk32          : std_logic;
@@ -406,7 +406,7 @@ signal shift_mod         : std_logic_vector(1 downto 0);
 signal spi_intn          : std_logic;
 signal uart_tx_i         : std_logic;
 signal boot_button_detected : std_logic := '1';
-signal spi_ext           : std_logic; 
+signal spi_ext           : std_logic;
 
 constant TAP_ADDR      : std_logic_vector(22 downto 0) := 23x"200000";
 
@@ -543,13 +543,6 @@ gamepad_p1: entity work.dualshock2
     debug2        => open
     );
 
---led_ws2812: entity work.ws2812
---  port map
---  (
---   clk    => clk32,
---   color  => ws2812_color,
---   data   => ws2812
---  );
 
 process(clk32, disk_reset)
 variable reset_cnt : integer range 0 to 2147483647;
@@ -831,7 +824,7 @@ dram_inst_mist: entity work.sdram
 pll_locked <= pll_locked_pal and pll_locked_ntsc;
 dcsclksel <= "0001" when ntscMode = '0' else "0010";
 
-mainclock_pal: entity work.Gowin_PLL_60k_pal
+mainclock_pal: entity work.Gowin_PLL_138k_pal
 port map (
     lock => pll_locked_pal,
     clkout0 => open,
@@ -840,10 +833,10 @@ port map (
     clkout3 => clk32_pal,
     clkout4 => mspi_clk,
     clkin => clk,
-    mdclk => clk
+    init_clk => clk
 );
 
-mainclock_ntsc: entity work.Gowin_PLL_60k_ntsc
+mainclock_ntsc: entity work.Gowin_PLL_138k_ntsc
 port map (
     lock => pll_locked_ntsc,
     clkout0 => open,
@@ -851,7 +844,7 @@ port map (
     clkout2 => clk64_ntsc,
     clkout3 => clk32_ntsc,
     clkin => clk,
-    mdclk => clk
+    init_clk => clk
 );
 
   clk_switch_1: DCS
@@ -1116,7 +1109,7 @@ port map(
     resetn    => pll_locked_pal and jtagseln,
     ready     => flash_ready,
     busy      => open,
-    address   => (x"7" & "000" & dos_sel & c1541rom_addr),
+    address   => (x"7" & "000" & dos_sel & c1541rom_addr),  -- 64Mbit 
     cs        => c1541rom_cs,
     dout      => c1541rom_data,
     mspi_cs   => mspi_cs,
