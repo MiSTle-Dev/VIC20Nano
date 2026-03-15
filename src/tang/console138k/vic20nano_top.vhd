@@ -14,7 +14,6 @@ entity VIC20_TOP is
   (
     bl616_jtagsel : in std_logic;
     jtagseln    : out std_logic := '0';
-    reconfign   : out std_logic := 'Z';
     clk         : in std_logic;
     key_reset_n : in std_logic; -- S2 button
     key_user_n  : in std_logic; -- S1 button
@@ -406,7 +405,8 @@ signal shift_mod         : std_logic_vector(1 downto 0);
 signal spi_intn          : std_logic;
 signal uart_tx_i         : std_logic;
 signal boot_button_detected : std_logic := '1';
-signal spi_ext           : std_logic;
+signal spi_ext           : std_logic := '0';
+signal sys_jtagseln      : std_logic;
 
 constant TAP_ADDR      : std_logic_vector(22 downto 0) := 23x"200000";
 
@@ -449,15 +449,17 @@ begin
 
 -- enable JTAG if any button has been pressed during boot and also once
 -- the external FPGA Companion has been seen
-  jtagseln <= '1' when (not pll_locked_pal or boot_button_detected or spi_ext or bl616_jtagsel) = '0' else '0';
-  reconfign <= 'Z';  -- <= '0' when bl616_RECONFIGn = '0' else 'Z';
+  jtagseln  <= not bl616_jtagsel or spi_ext;
+  sys_jtagseln <= not (not pll_locked_pal or bl616_jtagsel);
   -- BL616 console to hw pins for external USB-UART adapter
   bl616_mon_tx <= uart_rx;
 
-  process (clk64_pal)
+  process (clk64_pal, pll_locked_pal)
   begin
-    if rising_edge(clk64_pal) then
-      if pll_locked_pal = '0' then
+    if pll_locked_pal = '0' then
+        spi_ext <= '0';
+    elsif rising_edge(clk64_pal) then
+      if bl616_jtagsel = '1' then
         spi_ext <= '0';
       elsif pmod_companion_ss = '0' then
         spi_ext <= '1';
@@ -821,7 +823,7 @@ dram_inst_mist: entity work.sdram
   -- dram        71250000    66250000
   -- core/pixel  35625000    33125000
 
-pll_locked <= pll_locked_pal and pll_locked_ntsc;
+pll_locked <= pll_locked_pal and pll_locked_ntsc and not bl616_jtagsel;
 dcsclksel <= "0001" when ntscMode = '0' else "0010";
 
 mainclock_pal: entity work.Gowin_PLL_138k_pal
@@ -1106,7 +1108,7 @@ module_inst: entity work.sysctrl
 flash_inst: entity work.flash 
 port map(
     clk       => clk64_pal,
-    resetn    => pll_locked_pal and jtagseln,
+    resetn    => sys_jtagseln,
     ready     => flash_ready,
     busy      => open,
     address   => (x"7" & "000" & dos_sel & c1541rom_addr),  -- 64Mbit 
@@ -1444,7 +1446,7 @@ port map (
 );
 
 -- external HW pin UART interface
-uart_rx_muxed <= uart_rx when system_uart = "00" else uart_ext_rx when system_uart = "01" else '1';
+uart_rx_muxed <= bl616_jtagsel when system_uart = "00" else uart_ext_rx when system_uart = "01" else '1';
 uart_ext_tx <= uart_tx_i;
 
 -- UART_RX synchronizer
