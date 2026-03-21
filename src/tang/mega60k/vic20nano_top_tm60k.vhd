@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------
 --  VIC20 Top level for Tang Mega 60k
---  2024 Stefan Voss
+--  2024...2026 Stefan Voss
 --  based on the work of many others
 --
 -------------------------------------------------------------------------
@@ -12,25 +12,52 @@ use IEEE.numeric_std.ALL;
 entity VIC20_TOP_tm60k is
   port
   (
+    bl616_jtagsel : in std_logic;
+    jtagseln    : out std_logic := '0';
     clk         : in std_logic;
-    reset       : in std_logic; -- S2 button
-    user        : in std_logic; -- S1 button
+    key_reset_n : in std_logic; -- S2 button
+    key_user_n  : in std_logic; -- S1 button
     leds_n      : out std_logic_vector(1 downto 0);
     io          : in std_logic_vector(5 downto 0);
     -- USB-C BL616 UART
-    uart_rx     : in std_logic;
-    uart_tx     : out std_logic;
+    --uart_rx     : in std_logic;
+    --uart_tx     : out std_logic;
     -- external hw pin UART
     uart_ext_rx : in std_logic;
     uart_ext_tx : out std_logic;
-    -- SPI interface Sipeed M0S Dock external BL616 uC
-    m0s         : inout std_logic_vector(4 downto 0);
+    -- monitor port
+    --bl616_mon_tx : out std_logic;
+    -- SPI interface external uC
+    pmod_companion_din : in std_logic;
+    pmod_companion_dout : out std_logic;
+    pmod_companion_ss : in std_logic;
+    pmod_companion_clk : in std_logic;
+    pmod_companion_intn : out std_logic;
+    -- SPI connection to onboard BL616
+    spi_sclk    : in std_logic;
+    spi_csn     : in std_logic;
+    spi_dir     : out std_logic;
+    spi_dat     : in std_logic;
+    spi_irqn    : out std_logic;
+    -- internal lcd
+    lcd_clk     : out std_logic; -- lcd clk
+    lcd_hs      : out std_logic; -- lcd horizontal synchronization
+    lcd_vs      : out std_logic; -- lcd vertical synchronization        
+    lcd_de      : out std_logic; -- lcd data enable     
+    lcd_bl      : out std_logic; -- lcd backlight control
+    lcd_r       : out std_logic_vector(5 downto 0);  -- lcd red
+    lcd_g       : out std_logic_vector(5 downto 0);  -- lcd green
+    lcd_b       : out std_logic_vector(5 downto 0);  -- lcd blue
+    -- audio
+    hp_bck      : out std_logic;
+    hp_ws       : out std_logic;
+    hp_din      : out std_logic;
+    pa_en       : out std_logic;
     --
     tmds_clk_n  : out std_logic;
     tmds_clk_p  : out std_logic;
     tmds_d_n    : out std_logic_vector( 2 downto 0);
     tmds_d_p    : out std_logic_vector( 2 downto 0);
-    hpd_en      : out std_logic;
     -- sd interface
     sd_clk      : out std_logic;
     sd_cmd      : inout std_logic;
@@ -181,12 +208,12 @@ signal system_reset   : std_logic_vector(1 downto 0);
 signal disk_reset     : std_logic;
 signal disk_chg_trg   : std_logic;
 signal disk_chg_trg_d : std_logic;
-signal sd_img_size    : std_logic_vector(31 downto 0);
-signal sd_img_size_d  : std_logic_vector(31 downto 0);
-signal sd_img_mounted : std_logic_vector(5 downto 0);
+signal sd_img_size    : std_logic_vector(63 downto 0);
+signal sd_img_size_d  : std_logic_vector(63 downto 0);
+signal sd_img_mounted : std_logic_vector(7 downto 0);
 signal sd_img_mounted_d : std_logic;
-signal sd_rd          : std_logic_vector(5 downto 0);
-signal sd_wr          : std_logic_vector(5 downto 0);
+signal sd_rd          : std_logic_vector(7 downto 0);
+signal sd_wr          : std_logic_vector(7 downto 0);
 signal sd_lba         : std_logic_vector(31 downto 0);
 signal sd_busy        : std_logic;
 signal sd_done        : std_logic;
@@ -206,7 +233,7 @@ signal disk_g64       : std_logic;
 signal disk_g64_d     : std_logic;
 signal c1541_reset    : std_logic;
 signal c1541_osd_reset : std_logic;
-signal system_wide_screen : std_logic;
+signal system_screen  : std_logic_vector(1 downto 0);
 signal system_floppy_wprot : std_logic_vector(1 downto 0);
 signal leds           : std_logic_vector(5 downto 0);
 signal system_leds    : std_logic_vector(1 downto 0);
@@ -258,8 +285,6 @@ signal key_start2      : std_logic;
 signal key_select2     : std_logic;
 
 signal audio_div       : unsigned(8 downto 0);
-signal flash_clk       : std_logic;
-signal flash_lock      : std_logic;
 ---
 signal v20_en          : std_logic; 
 signal video_r         : std_logic_vector(3 downto 0);
@@ -371,14 +396,20 @@ signal system_reset_d    : std_logic;
 signal disk_pause        : std_logic;
 signal tap_data_in       : std_logic_vector(7 downto 0);
 signal p2_hD             : std_logic;
-signal system_uart     : std_logic_vector(1 downto 0);
-signal uart_rx_muxed   : std_logic;
-signal paddle_1_analogA : std_logic;
-signal paddle_1_analogB : std_logic;
-signal paddle_2_analogA : std_logic;
-signal paddle_2_analogB : std_logic;
-signal flash_ready      : std_logic;
-signal shift_mod       : std_logic_vector(1 downto 0);
+signal system_uart       : std_logic_vector(1 downto 0);
+signal uart_rx_muxed     : std_logic;
+signal paddle_1_analogA  : std_logic;
+signal paddle_1_analogB  : std_logic;
+signal paddle_2_analogA  : std_logic;
+signal paddle_2_analogB  : std_logic;
+signal flash_ready       : std_logic;
+signal shift_mod         : std_logic_vector(1 downto 0);
+signal spi_intn          : std_logic;
+signal uart_tx_i         : std_logic;
+signal boot_button_detected : std_logic := '1';
+signal spi_ext           : std_logic; 
+signal uart_rx           : std_logic;
+signal uart_tx          : std_logic;
 
 constant TAP_ADDR      : std_logic_vector(22 downto 0) := 23x"200000";
 
@@ -412,15 +443,36 @@ end component;
 
 begin
 
-hpd_en <= '1';
+  process (pll_locked_pal)
+  begin
+    if rising_edge(pll_locked_pal) then
+      boot_button_detected <= '1' when key_user_n = '0' or key_reset_n = '0' else '0';
+    end if;
+  end process;
 
-  spi_io_din  <= m0s(1);
-  spi_io_ss   <= m0s(2);
-  spi_io_clk  <= m0s(3);
-  m0s(0)      <= spi_io_dout; -- M0 Dock
+-- enable JTAG if any button has been pressed during boot and also once
+-- the external FPGA Companion has been seen
+  jtagseln <= '1' when (not pll_locked_pal or boot_button_detected or spi_ext or bl616_jtagsel) = '0' else '0';
+  -- BL616 console to hw pins for external USB-UART adapter
 
--- https://store.curiousinventor.com/guides/PS2/
--- https://hackaday.io/project/170365-blueretro/log/186471-playstation-playstation-2-spi-interface
+  process (clk64_pal)
+  begin
+    if rising_edge(clk64_pal) then
+      if pll_locked_pal = '0' then
+        spi_ext <= '0';
+      elsif pmod_companion_ss = '0' then
+        spi_ext <= '1';
+      end if;
+    end if;
+  end process;
+
+  spi_io_din <= pmod_companion_din when spi_ext = '1' else spi_dat;
+  spi_io_ss <= pmod_companion_ss when spi_ext = '1' else spi_csn;
+  spi_io_clk <= pmod_companion_clk when spi_ext = '1' else spi_sclk;
+  spi_dir <= spi_io_dout;
+  spi_irqn <= uart_tx_i when spi_ext = '1' else spi_intn;
+  pmod_companion_dout <= spi_io_dout;
+  pmod_companion_intn <= spi_intn;
 
 gamepad_p1: entity work.dualshock2
     port map (
@@ -624,6 +676,8 @@ port map
 sd_lba <= loader_lba when loader_busy = '1' else disk_lba;
 sd_rd(0) <= c1541_sd_rd;
 sd_wr(0) <= c1541_sd_wr;
+sd_rd(7 downto 6) <= (others => '0');
+sd_wr(7 downto 6) <= (others => '0');
 ext_en <= '1' when dos_sel(0) = '0' else '0'; -- dolphindos, speeddos
 sdc_iack <= int_ack(3);
 
@@ -674,7 +728,11 @@ cass_aud <= cass_read and not cass_sense and not cass_motor;
 audio_l <= (vic_audio & "000000000000") or (5x"00" & cass_aud & 12x"00000");
 audio_r <= audio_l;
 
-video_inst: entity work.video 
+video_inst: entity work.video
+generic map
+(
+  STEREO  => false
+)
 port map(
       pll_lock     => pll_locked, 
       clk          => clk32,
@@ -702,14 +760,28 @@ port map(
       mcu_data  => mcu_data_out,
 
       -- values that can be configure by the user via osd
-      system_wide_screen => system_wide_screen,
+      system_screen => system_screen,
       system_scanlines => system_scanlines,
       system_volume => system_volume,
 
       tmds_clk_n => tmds_clk_n,
       tmds_clk_p => tmds_clk_p,
       tmds_d_n   => tmds_d_n,
-      tmds_d_p   => tmds_d_p
+      tmds_d_p   => tmds_d_p,
+
+      lcd_clk  => lcd_clk,
+      lcd_hs_n => lcd_hs,
+      lcd_vs_n => lcd_vs,
+      lcd_de   => lcd_de,
+      lcd_r(5 downto 0)    => lcd_r,
+      lcd_g(5 downto 0)    => lcd_g,
+      lcd_b(5 downto 0)    => lcd_b,
+      lcd_bl   => lcd_bl,
+
+      hp_bck   => hp_bck,
+      hp_ws    => hp_ws,
+      hp_din   => hp_din,
+      pa_en    => pa_en
       );
 
 -- MegaCart and Tape
@@ -759,7 +831,7 @@ dram_inst_mist: entity work.sdram
   -- dram        71250000    66250000
   -- core/pixel  35625000    33125000
 
-pll_locked <= pll_locked_pal and pll_locked_ntsc and flash_lock;
+pll_locked <= pll_locked_pal and pll_locked_ntsc;
 dcsclksel <= "0001" when ntscMode = '0' else "0010";
 
 mainclock_pal: entity work.Gowin_PLL_60k_pal
@@ -769,7 +841,9 @@ port map (
     clkout1 => clk_pixel_x5_pal,
     clkout2 => clk64_pal,
     clkout3 => clk32_pal,
-    clkin => clk
+    clkout4 => mspi_clk,
+    clkin => clk,
+    mdclk => clk
 );
 
 mainclock_ntsc: entity work.Gowin_PLL_60k_ntsc
@@ -779,17 +853,9 @@ port map (
     clkout1 => clk_pixel_x5_ntsc,
     clkout2 => clk64_ntsc,
     clkout3 => clk32_ntsc,
-    clkin => clk
+    clkin => clk,
+    mdclk => clk
 );
-
--- 64.0Mhz for flash controller c1541 ROM
-flashclock: entity work.Gowin_PLL_60k_flash
-    port map (
-        lock => flash_lock,
-        clkout0 => flash_clk,
-        clkout1 => mspi_clk,
-        clkin => clk
-    );
 
   clk_switch_1: DCS
   generic map (
@@ -1010,7 +1076,7 @@ module_inst: entity work.sysctrl
   system_reset        => system_reset,
   system_scanlines    => system_scanlines,
   system_volume       => system_volume,
-  system_wide_screen  => system_wide_screen,
+  system_screen       => system_screen,
   system_floppy_wprot => system_floppy_wprot,
   system_port_1       => port_1_sel,
   system_dos_sel      => dos_sel,
@@ -1036,20 +1102,20 @@ module_inst: entity work.sysctrl
   port_in_strobe      => open,
   port_in_data        => open,
 
-  int_out_n           => m0s(4),
+  int_out_n           => spi_intn,
   int_in              => unsigned'(x"0" & sdc_int & '0' & hid_int & '0'),
   int_ack             => int_ack,
 
-  buttons             => unsigned'(not reset & not user), -- S0 and S1 buttons on Tang Nano 20k
-  leds                => system_leds,         -- two leds can be controlled from the MCU
-  color               => ws2812_color -- a 24bit color to e.g. be used to drive the ws2812
+  buttons             => unsigned'(not key_user_n & not key_reset_n), -- S0 and S1 buttons
+  leds                => open,
+  color               => ws2812_color
 );
 
 -- c1541 ROM's SPI Flash, offset in spi flash $200000
 flash_inst: entity work.flash 
 port map(
-    clk       => flash_clk,
-    resetn    => pll_locked,
+    clk       => clk64_pal,
+    resetn    => pll_locked_pal and jtagseln,
     ready     => flash_ready,
     busy      => open,
     address   => (x"7" & "000" & dos_sel & c1541rom_addr),
@@ -1165,14 +1231,14 @@ vic_inst: entity work.VIC20
     sd_rd_data        => sd_rd_data,
     sd_rd_byte_strobe => sd_rd_byte_strobe,
   
-    sd_img_mounted    => sd_img_mounted,
+    sd_img_mounted    => sd_img_mounted(5 downto 0),
     loader_busy       => loader_busy,
     load_crt          => load_crt,
     load_prg          => load_prg,
     load_rom          => load_rom,
     load_tap          => load_tap,
     load_flt          => load_mc,
-    sd_img_size       => sd_img_size,
+    sd_img_size       => sd_img_size(31 downto 0),
     leds              => leds(5 downto 1),
     img_select        => open,
   
@@ -1388,7 +1454,7 @@ port map (
 
 -- external HW pin UART interface
 uart_rx_muxed <= uart_rx when system_uart = "00" else uart_ext_rx when system_uart = "01" else '1';
-uart_ext_tx <= uart_tx;
+uart_ext_tx <= uart_tx_i;
 
 -- UART_RX synchronizer
 process(clk32)
@@ -1419,7 +1485,7 @@ begin
   --user_port_cb1_in <= user_port_cb1_out;
   user_port_cb2_in <= user_port_cb2_out;
 
-  uart_tx <= user_port_cb2_out;
+  uart_tx_i <= user_port_cb2_out;
   user_port_cb1_in <= uart_rx_filtered;
   user_port_in(0) <= uart_rx_filtered;
   -- Zeromodem
