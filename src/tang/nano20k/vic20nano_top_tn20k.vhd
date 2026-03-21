@@ -12,7 +12,6 @@ use IEEE.numeric_std.ALL;
 entity VIC20_TOP is
   port
   (
-    reconfign    : out std_logic := 'Z';
     clk_27mhz    : in std_logic;
     key_reset    : in std_logic; -- S2 button
     key_user     : in std_logic; -- S1 button
@@ -192,12 +191,12 @@ signal system_reset   : std_logic_vector(1 downto 0);
 signal disk_reset     : std_logic;
 signal disk_chg_trg   : std_logic;
 signal disk_chg_trg_d : std_logic;
-signal sd_img_size    : std_logic_vector(31 downto 0);
-signal sd_img_size_d  : std_logic_vector(31 downto 0);
-signal sd_img_mounted : std_logic_vector(5 downto 0);
+signal sd_img_size    : std_logic_vector(63 downto 0);
+signal sd_img_size_d  : std_logic_vector(63 downto 0);
+signal sd_img_mounted : std_logic_vector(7 downto 0);
 signal sd_img_mounted_d : std_logic;
-signal sd_rd          : std_logic_vector(5 downto 0);
-signal sd_wr          : std_logic_vector(5 downto 0);
+signal sd_rd          : std_logic_vector(7 downto 0);
+signal sd_wr          : std_logic_vector(7 downto 0);
 signal sd_lba         : std_logic_vector(31 downto 0);
 signal sd_busy        : std_logic;
 signal sd_done        : std_logic;
@@ -217,7 +216,7 @@ signal disk_g64       : std_logic;
 signal disk_g64_d     : std_logic;
 signal c1541_reset    : std_logic;
 signal c1541_osd_reset : std_logic;
-signal system_wide_screen : std_logic;
+signal system_screen  : std_logic_vector(1 downto 0);
 signal system_floppy_wprot : std_logic_vector(1 downto 0);
 signal leds           : std_logic_vector(5 downto 0);
 signal system_leds    : std_logic_vector(1 downto 0);
@@ -447,7 +446,6 @@ component rPLL
 end component;
 
 begin
-reconfign <= 'Z';
 
 -- BL616 console to hw pins for external USB-UART adapter
 bl616_mon_tx <= uart_rx;
@@ -644,6 +642,8 @@ port map
 sd_lba <= loader_lba when loader_busy = '1' else disk_lba;
 sd_rd(0) <= c1541_sd_rd;
 sd_wr(0) <= c1541_sd_wr;
+sd_rd(7 downto 6) <= (others => '0');
+sd_wr(7 downto 6) <= (others => '0');
 ext_en <= '1' when dos_sel(0) = '0' else '0'; -- dolphindos, speeddos
 sdc_iack <= int_ack(3);
 
@@ -722,7 +722,7 @@ port map(
       mcu_data  => mcu_data_out,
 
       -- values that can be configure by the user via osd
-      system_wide_screen => system_wide_screen,
+      system_screen => system_screen,
       system_scanlines => system_scanlines,
       system_volume => system_volume,
 
@@ -1129,7 +1129,7 @@ module_inst: entity work.sysctrl
   system_reset        => system_reset,
   system_scanlines    => system_scanlines,
   system_volume       => system_volume,
-  system_wide_screen  => system_wide_screen,
+  system_screen       => system_screen,
   system_floppy_wprot => system_floppy_wprot,
   system_port_1       => port_1_sel,
   system_dos_sel      => dos_sel,
@@ -1284,14 +1284,14 @@ vic_inst: entity work.VIC20
     sd_rd_data        => sd_rd_data,
     sd_rd_byte_strobe => sd_rd_byte_strobe,
   
-    sd_img_mounted    => sd_img_mounted,
+    sd_img_mounted    => sd_img_mounted(5 downto 0),
     loader_busy       => loader_busy,
     load_crt          => load_crt,
     load_prg          => load_prg,
     load_rom          => load_rom,
     load_tap          => load_tap,
     load_flt          => load_mc,
-    sd_img_size       => sd_img_size,
+    sd_img_size       => sd_img_size(31 downto 0),
     leds              => leds(5 downto 1),
     img_select        => open,
   
@@ -1447,7 +1447,7 @@ mc_nvram_inst: entity work.megacart_nvram
 	sd_buff_dout   => sd_rd_data,
 	sd_buff_wr     => '0', --sd_strobe_nvram,
 	sd_buff_addr   => sd_byte_index,
-	img_size       => sd_img_size
+	img_size       => sd_img_size(31 downto 0)
 );
 
 -------------- TAP -------------------

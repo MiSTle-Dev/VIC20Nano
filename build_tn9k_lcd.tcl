@@ -1,8 +1,8 @@
 set_device GW1NR-LV9QN88PC6/I5 -name GW1NR-9C
 
-add_file src/gowin_dpb/gowin_dpb_track_buffer_b.v
-add_file src/gowin_dpb/gowin_dpb_trkbuf.v
-add_file src/gowin_dpb/sector_dpram.v
+add_file src/tang/nano9k/gowin_dpb/gowin_dpb_track_buffer_b.v
+add_file src/tang/nano9k/gowin_dpb/gowin_dpb_trkbuf.v
+add_file src/tang/nano9k/gowin_dpb/sector_dpram.v
 add_file src/hdmi/audio_clock_regeneration_packet.sv
 add_file src/hdmi/audio_info_frame.sv
 add_file src/hdmi/audio_sample_packet.sv
@@ -27,10 +27,10 @@ add_file src/tang/nano9k/psram_controller.vhd
 add_file src/c1530.vhd
 add_file src/c1541/via6522.vhd
 add_file src/fifo_sc_hs/fifo_sc_hs.vhd
-add_file src/gowin_dpb/gowin_dpb_1k.vhd
-add_file src/gowin_dpb/gowin_dpb_1k_x4.vhd
-add_file src/gowin_dpb/gowin_dpb_2k.vhd
-add_file src/gowin_dpb/gowin_dpb_8k.vhd
+add_file src/tang/nano9k/gowin_dpb/gowin_dpb_1k.vhd
+add_file src/tang/nano9k/gowin_dpb/gowin_dpb_1k_x4.vhd
+add_file src/tang/nano9k/gowin_dpb/gowin_dpb_2k.vhd
+add_file src/tang/nano9k/gowin_dpb/gowin_dpb_8k.vhd
 add_file src/gowin_prom/gowin_prom_char.vhd
 add_file src/gowin_sp/gowin_sp_2k.vhd
 add_file src/gowin_sp/gowin_sp_8k.vhd
@@ -62,8 +62,7 @@ set_option -use_mspi_as_gpio 1
 set_option -use_sspi_as_gpio 1
 set_option -rw_check_on_ram 0
 set_option -user_code 00000001
-set_option -bit_compress 1
-set_option -multi_boot 1
+set_option -multi_boot 0
 set_option -mspi_jump 0
 
 #run syn

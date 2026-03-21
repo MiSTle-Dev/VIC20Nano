@@ -22,7 +22,7 @@ All HID components and µC firmware by Till Harbaum
 
 Features:
 
-* PAL 832x576p@50Hz or NTSC 800x480p@60Hz HDMI Video and Audio Output
+* PAL 720x576p@50Hz or NTSC 720x480p@60Hz HDMI Video and Audio Output
 * TFT-LCD module 800x600 [SH500Q01Z](https://dl.sipeed.com/Accessories/LCD/500Q01Z-00%20spec.pdf) + Speaker support
 * USB Keyboard via µC (Sipeed M0S Dock BL616 / Raspberry Pi Pico RP2040 / ESP32 S2/S3)
 * [USB Joystick](https://en.wikipedia.org/wiki/Joystick) via µC

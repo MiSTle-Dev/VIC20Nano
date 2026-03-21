@@ -1,6 +1,6 @@
 
 @echo off
-set GWSH=C:\Gowin\Gowin_V1.9.12_x64\IDE\bin\gw_sh
+set GWSH=C:\Gowin\Gowin_V1.9.12.02_x64\IDE\bin\gw_sh
 
 %GWSH% build_tm138kpro.tcl
 %GWSH% build_tm60k.tcl
